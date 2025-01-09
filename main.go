@@ -11,15 +11,15 @@ import (
 )
 
 func main() {
-	// Get Consul address from environment variable or use default value
-	consulAddress := os.Getenv("CONSUL_ADDRESS")
+	// Get Consul address and token from environment variables
+	consulAddress := os.Getenv("CONSUL_HTTP_ADDR")
 	if consulAddress == "" {
 		consulAddress = "127.0.0.1:8500"
 	}
 
-	// Check command arguments
-	if len(os.Args) < 2 {
-		log.Fatalf("Please provide a command (ls or connect <node_name>)")
+	consulToken := os.Getenv("CONSUL_HTTP_TOKEN")
+	if consulToken == "" {
+		consulToken = ""
 	}
 
 	command := os.Args[1]
@@ -27,6 +27,7 @@ func main() {
 	// Create client configuration
 	config := consul.DefaultConfig()
 	config.Address = consulAddress
+	config.Token = consulToken
 
 	// Create client
 	client, err := consul.NewClient(config)
