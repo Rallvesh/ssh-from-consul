@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -40,10 +41,13 @@ func main() {
 			log.Fatalf("Error retrieving node list: %v", err)
 		}
 
-		// Print node information
-		for _, node := range nodes {
-			fmt.Printf("Node: %s, Address: %s\n", node.Node, node.Address)
+		// Convert to JSON
+		jsonData, err := json.MarshalIndent(nodes, "", "  ")
+		if err != nil {
+			log.Fatalf("Error converting data to JSON: %v", err)
 		}
+
+		fmt.Println(string(jsonData))
 	} else if command == "connect" {
 		if len(os.Args) < 3 {
 			log.Fatalf("Please provide a node name for the connect command")
