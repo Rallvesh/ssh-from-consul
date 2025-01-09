@@ -16,13 +16,12 @@ func main() {
 		consulAddress = "127.0.0.1:8500"
 	}
 
-	// Get node name from environment variable or argument
-	var nodeName string
-	if len(os.Args) > 1 {
-		nodeName = os.Args[1]
-	} else {
-		log.Fatalf("Please provide a node name as an argument")
+	// Check command arguments
+	if len(os.Args) < 2 {
+		log.Fatalf("Please provide a command (ls or connect <node_name>)")
 	}
+
+	command := os.Args[1]
 
 	// Create client configuration
 	config := consul.DefaultConfig()
@@ -34,23 +33,43 @@ func main() {
 		log.Fatalf("Error creating Consul client: %v", err)
 	}
 
-	// Retrieve node information
-	node, _, err := client.Catalog().Node(nodeName, nil)
-	if err != nil || node == nil {
-		log.Fatalf("Error retrieving node information: %v", err)
-	}
+	if command == "ls" {
+		// Retrieve list of nodes
+		nodes, _, err := client.Catalog().Nodes(nil)
+		if err != nil {
+			log.Fatalf("Error retrieving node list: %v", err)
+		}
 
-	// Get node IP
-	nodeIP := node.Node.Address
-	fmt.Printf("Connecting to node: %s, IP: %s\n", nodeName, nodeIP)
+		// Print node information
+		for _, node := range nodes {
+			fmt.Printf("Node: %s, Address: %s\n", node.Node, node.Address)
+		}
+	} else if command == "connect" {
+		if len(os.Args) < 3 {
+			log.Fatalf("Please provide a node name for the connect command")
+		}
+		nodeName := os.Args[2]
 
-	// Connect via SSH
-	cmd := exec.Command("ssh", nodeIP)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	err = cmd.Run()
-	if err != nil {
-		log.Fatalf("Error connecting via SSH: %v", err)
+		// Retrieve node information
+		node, _, err := client.Catalog().Node(nodeName, nil)
+		if err != nil || node == nil {
+			log.Fatalf("Error retrieving node information: %v", err)
+		}
+
+		// Get node IP
+		nodeIP := node.Node.Address
+		fmt.Printf("Connecting to node: %s, IP: %s\n", nodeName, nodeIP)
+
+		// Connect via SSH
+		cmd := exec.Command("ssh", nodeIP)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		err = cmd.Run()
+		if err != nil {
+			log.Fatalf("Error connecting via SSH: %v", err)
+		}
+	} else {
+		log.Fatalf("Unknown command: %s", command)
 	}
 }
