@@ -60,12 +60,16 @@ func main() {
 			log.Fatalf("Error retrieving node information: %v", err)
 		}
 
-		// Get node IP
-		nodeIP := node.Node.Address
-		fmt.Printf("Connecting to node: %s, IP: %s\n", nodeName, nodeIP)
+		// Extract WAN IP
+		wanIP, exists := node.Node.TaggedAddresses["wan_ipv4"]
+		if !exists || wanIP == "" {
+			log.Fatalf("WAN IP not found for node: %s", nodeName)
+		}
+
+		fmt.Printf("Connecting to node: %s, WAN IP: %s\n", nodeName, wanIP)
 
 		// Connect via SSH
-		cmd := exec.Command("ssh", nodeIP)
+		cmd := exec.Command("ssh", wanIP)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
