@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 
 	consul "github.com/hashicorp/consul/api"
 	"github.com/rallvesh/ssh-from-consul/internal/config"
+	"github.com/rallvesh/ssh-from-consul/internal/ssh"
 )
 
 func main() {
@@ -71,26 +71,12 @@ func main() {
 
 		fmt.Printf("Connecting to node: %s, WAN IP: %s\n", nodeName, wanIP)
 
-		sshArgs := []string{wanIP}
-
-		// Если username указан в конфиге — используем его, иначе берем системный
-		username := cfg.Username
-		if username == "" {
-			username = config.GetDefaultUsername()
+		sshClient := ssh.SSHClient{
+			Username:       cfg.Username,
+			PrivateKeyPath: cfg.PrivateKeyPath,
 		}
 
-		// Если указан ключ, добавляем его в ssh команду
-		if cfg.PrivateKeyPath != "" {
-			sshArgs = append([]string{"-i", cfg.PrivateKeyPath, username + "@" + wanIP})
-		} else {
-			sshArgs = append([]string{username + "@" + wanIP})
-		}
-
-		cmd := exec.Command("ssh", sshArgs...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-		err = cmd.Run()
+		err = sshClient.Connect(wanIP)
 		if err != nil {
 			log.Fatalf("Error connecting via SSH: %v", err)
 		}

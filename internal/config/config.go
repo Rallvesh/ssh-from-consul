@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/user"
 	"path/filepath"
 )
 
@@ -80,13 +79,4 @@ func LoadConfig(profile string) (Config, error) {
 	}
 
 	return Config{}, fmt.Errorf("profile '%s' not found in config", profile)
-}
-
-// GetDefaultUsername возвращает системное имя пользователя.
-func GetDefaultUsername() string {
-	currentUser, err := user.Current()
-	if err != nil {
-		log.Fatalf("Error getting current user: %v", err)
-	}
-	return currentUser.Username
 }
