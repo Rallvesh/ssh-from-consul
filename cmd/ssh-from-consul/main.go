@@ -12,6 +12,12 @@ func main() {
 		log.Fatalf("Usage: %s [profile] <command> [args]", os.Args[0])
 	}
 
+	// Проверка на флаг --version
+	if os.Args[1] == "--version" {
+		app.ShowVersion()
+		return
+	}
+
 	profile := "default"
 	commandIndex := 1
 

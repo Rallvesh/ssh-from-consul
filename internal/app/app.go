@@ -5,11 +5,22 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/rallvesh/ssh-from-consul/internal/config"
 	"github.com/rallvesh/ssh-from-consul/internal/ssh"
 )
+
+// Версия программы
+const version = "v1.0.0-rc"
+
+// PrintVersion печатает текущую версию приложения
+func ShowVersion() {
+	// Выводим имя программы, версию и платформу
+	fmt.Printf("%s %s\n", os.Args[0], version)
+	fmt.Printf("on %s_%s\n", runtime.GOOS, runtime.GOARCH)
+}
 
 // HandleCommand обрабатывает команду `ls` или `connect` с параметрами.
 func HandleCommand(command string, profile string) {
