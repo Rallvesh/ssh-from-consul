@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 
 	consul "github.com/hashicorp/consul/api"
@@ -14,8 +15,8 @@ import (
 type Config struct {
 	ConsulHTTPAddr  string `json:"consul_http_addr"`
 	ConsulHTTPToken string `json:"consul_http_token"`
-	Username        string `json:"username"`
-	PrivateKeyPath  string `json:"private_key_path"`
+	Username        string `json:"username,omitempty"`
+	PrivateKeyPath  string `json:"private_key_path,omitempty"`
 }
 
 type ConfigFile []map[string]Config
@@ -79,6 +80,14 @@ func loadConfig(profile string) (Config, error) {
 	return Config{}, fmt.Errorf("profile '%s' not found in config", profile)
 }
 
+func getDefaultUsername() string {
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Fatalf("Error getting current user: %v", err)
+	}
+	return currentUser.Username
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		log.Fatalf("Usage: %s [profile] <command> [args]", os.Args[0])
@@ -139,7 +148,22 @@ func main() {
 
 		fmt.Printf("Connecting to node: %s, WAN IP: %s\n", nodeName, wanIP)
 
-		cmd := exec.Command("ssh", "-i", config.PrivateKeyPath, config.Username+"@"+wanIP)
+		sshArgs := []string{wanIP}
+
+		// Если username указан в конфиге — используем его, иначе берем системный
+		username := config.Username
+		if username == "" {
+			username = getDefaultUsername()
+		}
+
+		// Если указан ключ, добавляем его в ssh команду
+		if config.PrivateKeyPath != "" {
+			sshArgs = append([]string{"-i", config.PrivateKeyPath, username + "@" + wanIP})
+		} else {
+			sshArgs = append([]string{username + "@" + wanIP})
+		}
+
+		cmd := exec.Command("ssh", sshArgs...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
