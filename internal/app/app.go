@@ -7,17 +7,16 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/hashicorp/consul/api"
+	consul "github.com/hashicorp/consul/api"
 	"github.com/rallvesh/ssh-from-consul/internal/config"
 	"github.com/rallvesh/ssh-from-consul/internal/ssh"
 )
 
 // Версия программы
-const version = "v1.0.0-rc"
+const version = "v1.0.0"
 
-// PrintVersion печатает текущую версию приложения
+// Выводим текущую версию приложения
 func ShowVersion() {
-	// Выводим имя программы, версию и платформу
 	fmt.Printf("%s %s\n", os.Args[0], version)
 	fmt.Printf("on %s_%s\n", runtime.GOOS, runtime.GOARCH)
 }
@@ -31,11 +30,11 @@ func HandleCommand(command string, profile string) {
 	}
 
 	// Конфигурируем клиент Consul
-	clientConfig := api.DefaultConfig()
+	clientConfig := consul.DefaultConfig()
 	clientConfig.Address = cfg.ConsulHTTPAddr
 	clientConfig.Token = cfg.ConsulHTTPToken
 
-	client, err := api.NewClient(clientConfig)
+	client, err := consul.NewClient(clientConfig)
 	if err != nil {
 		log.Fatalf("Error creating Consul client: %v", err)
 	}
@@ -56,7 +55,7 @@ func HandleCommand(command string, profile string) {
 }
 
 // listNodes получает и выводит список узлов в формате JSON.
-func listNodes(client *api.Client) {
+func listNodes(client *consul.Client) {
 	nodes, _, err := client.Catalog().Nodes(nil)
 	if err != nil {
 		log.Fatalf("Error retrieving node list: %v", err)
@@ -73,7 +72,7 @@ func listNodes(client *api.Client) {
 }
 
 // connectToNode подключается к узлу через SSH, используя параметры из конфига.
-func connectToNode(client *api.Client, nodeName string, cfg config.Config) {
+func connectToNode(client *consul.Client, nodeName string, cfg config.Config) {
 	// Получаем информацию об узле
 	node, _, err := client.Catalog().Node(nodeName, nil)
 	if err != nil || node == nil {
