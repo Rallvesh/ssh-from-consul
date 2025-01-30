@@ -10,6 +10,7 @@ import (
 	consul "github.com/hashicorp/consul/api"
 	"github.com/rallvesh/ssh-from-consul/internal/config"
 	"github.com/rallvesh/ssh-from-consul/internal/ssh"
+	"github.com/rallvesh/ssh-from-consul/internal/table"
 )
 
 // Версия программы
@@ -41,6 +42,8 @@ func HandleCommand(command string, profile string) {
 
 	// Обрабатываем команду
 	switch command {
+	case "table":
+		table.Run()
 	case "ls":
 		listNodes(client)
 	case "connect":
