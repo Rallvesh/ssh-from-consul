@@ -3,8 +3,6 @@ package table
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -26,7 +24,8 @@ type NodeData struct {
 
 // Model представляет собой основную модель приложения.
 type Model struct {
-	table table.Model
+	table        table.Model
+	selectedNode string // Поле для хранения выбранного узла.
 }
 
 // Init инициализирует модель. В данном случае не выполняет никаких действий.
@@ -47,9 +46,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		case "enter":
-			return m, tea.Batch(
-				tea.Printf("Selected Node: %s", m.table.SelectedRow()[0]),
-			)
+			// Сохраняем выбранный узел.
+			m.selectedNode = m.table.SelectedRow()[0]
+			return m, tea.Quit // Завершаем программу.
 		}
 	}
 	m.table, cmd = m.table.Update(msg)
@@ -101,37 +100,38 @@ func NewModel(data []NodeData) Model {
 	return Model{table: t}
 }
 
-// LoadData загружает данные из JSON-файла.
-func LoadData(filename string) ([]NodeData, error) {
-	filePath, err := filepath.Abs(filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path: %w", err)
-	}
-
-	fileData, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
-	}
-
+// ParseData парсит JSON-строку в структуру данных.
+func ParseData(jsonData string) ([]NodeData, error) {
 	var nodes []NodeData
-	if err := json.Unmarshal(fileData, &nodes); err != nil {
+	if err := json.Unmarshal([]byte(jsonData), &nodes); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
-
 	return nodes, nil
 }
 
-// Run запускает приложение.
-func Run() {
-	nodes, err := LoadData("nodes.json")
+// GetSelectedNode возвращает выбранный узел.
+func (m Model) GetSelectedNode() string {
+	return m.selectedNode
+}
+
+// Run запускает приложение, принимая JSON-строку, и возвращает выбранный узел.
+func Run(jsonData string) (string, error) {
+	nodes, err := ParseData(jsonData)
 	if err != nil {
-		fmt.Println("Error loading data:", err)
-		os.Exit(1)
+		return "", fmt.Errorf("error parsing JSON data: %w", err)
 	}
 
 	m := NewModel(nodes)
-	if _, err := tea.NewProgram(m).Run(); err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
+	// Запускаем программу и получаем финальную модель.
+	finalModel, err := tea.NewProgram(m).Run()
+	if err != nil {
+		return "", fmt.Errorf("error running program: %w", err)
 	}
+
+	// Приводим finalModel к типу Model и получаем выбранный узел.
+	if model, ok := finalModel.(Model); ok {
+		return model.GetSelectedNode(), nil
+	}
+
+	return "", fmt.Errorf("failed to get selected node")
 }

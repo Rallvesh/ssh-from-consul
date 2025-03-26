@@ -14,7 +14,7 @@ import (
 )
 
 // Версия программы
-const version = "v1.0.0"
+const version = "v1.0.1"
 
 // Выводим текущую версию приложения
 func ShowVersion() {
@@ -42,10 +42,8 @@ func HandleCommand(command string, profile string) {
 
 	// Обрабатываем команду
 	switch command {
-	case "table":
-		table.Run()
 	case "ls":
-		listNodes(client)
+		listNodes(client, cfg)
 	case "connect":
 		if len(os.Args) < 4 {
 			log.Fatalf("Please provide a node name for the connect command")
@@ -58,7 +56,7 @@ func HandleCommand(command string, profile string) {
 }
 
 // listNodes получает и выводит список узлов в формате JSON.
-func listNodes(client *consul.Client) {
+func listNodes(client *consul.Client, cfg config.Config) {
 	nodes, _, err := client.Catalog().Nodes(nil)
 	if err != nil {
 		log.Fatalf("Error retrieving node list: %v", err)
@@ -72,6 +70,20 @@ func listNodes(client *consul.Client) {
 
 	// Печатаем JSON
 	fmt.Println(string(jsonData))
+
+	selectedNode, err := table.Run(string(jsonData))
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	if selectedNode == "" {
+		fmt.Println("No node selected.")
+	} else {
+		// fmt.Println("Selected Node:", selectedNode)
+		connectToNode(client, selectedNode, cfg)
+
+	}
 }
 
 // connectToNode подключается к узлу через SSH, используя параметры из конфига.
